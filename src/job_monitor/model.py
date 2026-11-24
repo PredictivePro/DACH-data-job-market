@@ -149,9 +149,12 @@ def normalize(raw, source, collected_at=None):
     if isinstance(location, dict):
         location = location.get("display_name") or location.get("name") or location.get("ort") or ""
     title = clean_text(raw.get("title") or raw.get("jobTitle") or raw.get("stellenangebotsTitel") or raw.get("beruf")) or None
-    company = clean_text(raw.get("company") or raw.get("company_name") or raw.get("companyName") or raw.get("employer") or raw.get("arbeitgeber")) or None
+    company_value = raw.get("company") or raw.get("company_name") or raw.get("companyName") or raw.get("employer") or raw.get("arbeitgeber")
+    if isinstance(company_value, dict):
+        company_value = company_value.get("display_name") or company_value.get("name")
+    company = clean_text(company_value) or None
     description = clean_text(raw.get("description") or raw.get("description_text") or raw.get("jobDescription") or raw.get("stellenangebotsBeschreibung")) or None
-    app_url = raw.get("application_url") or raw.get("apply_url")
+    app_url = raw.get("application_url") or raw.get("apply_url") or raw.get("redirect_url")
     source_url = raw.get("url") or raw.get("source_url") or raw.get("job_url")
     if source == "jobicy":
         source_url = source_url or raw.get("job_url")

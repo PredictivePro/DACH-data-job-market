@@ -29,6 +29,15 @@ def test_normalize_jobicy_api_shape_and_freshness():
     assert "Use Python & SQL" == row["description"]
 
 
+def test_normalize_adzuna_company_object_and_redirect_url():
+    row = normalize({"id": "adz-1", "title": "Data Engineer",
+                     "company": {"__CLASS__": "Company", "display_name": "Example GmbH"},
+                     "location": {"display_name": "Berlin, Germany"},
+                     "redirect_url": "https://adzuna.example/job/1?utm_source=api"}, "adzuna")
+    assert row["company"] == "Example GmbH"
+    assert row["application_url"] == "https://adzuna.example/job/1?utm_source=api"
+
+
 def test_missing_fields_remain_missing():
     row = normalize({"id": "empty", "title": "Data Analyst"}, "arbeitnow")
     assert row["company"] is None

@@ -56,14 +56,17 @@
         const loc = [j.city,j.country].filter(Boolean).join(", ") || j.location_raw || "Location not supplied";
         const salary = j.salary_min || j.salary_max ? `<p>Salary: ${esc(j.salary_min||"")}–${esc(j.salary_max||"")} ${esc(j.salary_currency||"")}</p>` : "";
         const refs = j.source_references||[];
-        const links = refs.map(x => x.application_url||x.source_url).filter(Boolean);
+        const candidates = refs.map(x => x.application_url||x.source_url).concat(j.application_urls||[], [j.application_url,j.source_url]);
+        const links = [...new Set(candidates.filter(Boolean).filter(u => {
+          try { return ["http:","https:"].includes(new URL(u).protocol); } catch { return false; }
+        }))];
         const explain = (j.dedup_explanations||[]).map(x => ({same_source_id:"same source ID",canonical_url:"same canonical URL",title_company_location_description_similarity:"title, employer, location and description similarity"}[x.match_reason]||x.match_reason));
         return `<article class="monitor-job"><h3>${esc(j.title||"Untitled role")}</h3><p><b>${esc(j.company||"Employer not supplied")}</b> · ${esc(loc)}</p>`+
           `<span class="monitor-badge">${esc(j.role_category)}</span>${(j.sources||[j.source]).map(s=>`<span class="monitor-badge">${esc(s)}</span>`).join("")}`+
           (explain.length ? `<p>Grouped by ${[...new Set(explain)].map(esc).join(", ")}</p>` : "") +
           `<p>First seen: ${esc(berlin(j.first_seen_at))} Berlin<br>Aggregator publication: ${esc(berlin(j.publication_date))}<br>Last observed: ${esc(berlin(j.last_seen_at))} Berlin`+
           `${j.remote_type?`<br>Workplace: ${esc(j.remote_type)}`:""}${j.employment_type?`<br>Employment: ${esc(j.employment_type)}`:""}</p>${salary}`+
-          (links.length?`<p>${[...new Set(links)].map((u,i)=>`<a href="${esc(u)}" target="_blank" rel="noopener">${i?`Source ${i+1}`:"View listing / apply"}</a>`).join(" · ")}</p>`:"")+`</article>`;
+          (links.length?`<p>${links.map((u,i)=>`<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${i?`Other source ${i+1}`:"Open listing / apply"}</a>`).join(" · ")}</p>`:"")+`</article>`;
       }).join("") || "<p>No matching monitored jobs. Collection data appears after the collector is deployed.</p>";
     };
     controls.forEach(e => e.addEventListener("input", draw));
