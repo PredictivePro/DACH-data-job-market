@@ -16,6 +16,7 @@
 | [Adzuna](https://developer.adzuna.com/docs/search) | Official search API; app ID and key required | Existing integration retained. Search pagination is bounded by `ADZUNA_MAX_PAGES` (default 5) to control request volume; `ADZUNA_ROLES` can replace the default role list. |
 | [Arbeitnow](https://documenter.getpostman.com/view/18545278/UVJbJdKh) | Public JSON endpoint, no key | Fetches paginated feed and identifies DE/AT/CH from country names or known DACH cities in the returned location. It does not infer a country from a company name. The dashboard credits the source and links to original feed listings. |
 | [Jobicy](https://jobicy.com/jobs-rss-feed) | Public Jobs API, no key | Requests Europe/data-related feed pages and filters to explicit DACH eligibility. The public API links to the Jobicy listing; a direct ATS application URL requires their commercial API and may incur per-job charges, so this code does not request it. The public feed is limited to the latest seven days and has a publication delay; polling is below hourly frequency and requests are spaced at least one second apart. |
+| [Jooble](https://jooblehelpcenter.freshdesk.com/en/support/solutions/articles/60001448238-rest-api-documentation) | Country-scoped REST API; separate API key for DE, AT and CH | Searches a combined configurable list of data/AI role terms for each country. Defaults to at most two pages per country per run (up to 10 requests per country on weekdays and 2 on weekend days, below Jooble's documented 100/day free limit). Jooble's `link` is retained as a source listing URL; it is not treated as an employer application URL. Missing keys or a country failure are reported without stopping the other regions or sources. |
 | Bundesagentur für Arbeit | Connector stub only | Public material describes a Jobsuche endpoint and shared client ID, but I could not verify a current first-party API contract, stable support, rate limits or terms from authoritative BA documentation. Community copies of an OpenAPI definition disagree on authentication/TLS details. The connector is deliberately disabled; no insecure TLS workaround or undocumented authentication is shipped. |
 
 ## Data flow
@@ -25,6 +26,7 @@ flowchart LR
   A[Adzuna API] --> C[Independent connectors]
   B[Arbeitnow API] --> C
   J[Jobicy public API] --> C
+  Q[Jooble country APIs] --> C
   C -->|verbatim response pages + run/source/time| Br[Bronze JSON snapshots]
   C --> N[Normalize to common job schema]
   N --> D[Exact URL/ID and strong similarity matching]
@@ -86,7 +88,7 @@ GitHub Actions supports timezone-aware scheduled workflows, so `.github/workflow
 
 1. Create a **private** repository for persistent state (for example `your-user/dach-job-monitor-state`) and initialize it with a README so it has a default branch. It contains raw API snapshots and notification history; keep it private.
 2. Create a fine-grained personal access token scoped only to that private state repository, with **Contents: Read and write** permission. Add it as the `STATE_REPO_TOKEN` Actions secret in this project.
-3. Add these secrets in this project: `ADZUNA_APP_ID`, `ADZUNA_APP_KEY`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `EMAIL_FROM`, and `EMAIL_TO`. The state repository name is set in the workflow file and does not need to be a secret.
+3. Add these secrets in this project: `ADZUNA_APP_ID`, `ADZUNA_APP_KEY`, `JOOBLE_API_KEY_DE`, `JOOBLE_API_KEY_AT`, `JOOBLE_API_KEY_CH`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `EMAIL_FROM`, and `EMAIL_TO`. Jooble keys are issued from the corresponding regional API portals (`de.jooble.org/api/about`, `at.jooble.org/api/about`, and `ch.jooble.org/api/about`) and are country-specific. The connector uses at most two pages per country per run by default; configure `JOOBLE_MAX_PAGES` if needed while staying within Jooble's documented 100 requests/day/key allowance. The state repository name is set in the workflow file and does not need to be a secret.
 4. Ensure the project's Actions settings allow workflows to create and approve commits (repository contents write permission). GitHub Pages, if enabled, should be configured to publish from the branch that receives the dashboard JSON commit.
 5. Run **Actions → DACH job collector → Run workflow**. The first run automatically creates a quiet baseline so existing listings do not trigger a bulk email. Confirm the run succeeds, the database and `bronze/` appear in the private state repository, and `docs/data/monitoring.json` updates in the project. Later runs notify you about newly discovered matching jobs.
 

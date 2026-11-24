@@ -44,6 +44,9 @@ jobs:
           PYTHONPATH: src
           ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
           ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
+          JOOBLE_API_KEY_DE: ${{ secrets.JOOBLE_API_KEY_DE }}
+          JOOBLE_API_KEY_AT: ${{ secrets.JOOBLE_API_KEY_AT }}
+          JOOBLE_API_KEY_CH: ${{ secrets.JOOBLE_API_KEY_CH }}
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}

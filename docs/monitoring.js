@@ -38,7 +38,7 @@
       const attempts = runStats.filter(x => x.stats[s]);
       const successes = attempts.filter(x => x.stats[s].status === "success").length;
       const latest = attempts.find(x => x.stats[s].status === "success");
-      const error = attempts.find(x => x.stats[s].status === "failed");
+      const error = attempts.find(x => ["failed","partial_failure"].includes(x.stats[s].status));
       return `<span>${esc(s)}: ${observed} observed · ${counts[s].fresh} new/24h · ${dupRate}% cross-source duplicates · ${attempts.length ? Math.round(successes*100/attempts.length) : 0}% success · last success ${esc(latest?.run.finished_at ? berlin(latest.run.finished_at) : "none")}${error ? ` · error ${esc((JSON.parse(error.run.errors||"[]").join(", "))||"source failed")}` : ""}</span>`;
     }).join("");
     const controls = ["monitor-title-search","monitor-company-search","monitor-country","monitor-source","monitor-category","monitor-remote","monitor-employment","monitor-first-date","monitor-pub-date"].map($);

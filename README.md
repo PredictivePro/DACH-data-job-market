@@ -15,7 +15,7 @@ The existing market dashboard contains historical Adzuna snapshots: **3,000+ pos
 
 ## Multi-source collection and instant alerts
 
-The monitor adds independent Adzuna, Arbeitnow and Jobicy connectors, a source-neutral SQLite ledger, append-only raw JSON snapshots, explainable cross-source matching, an SMTP notification outbox, and a dashboard data export. For a quiet initial baseline, run `PYTHONPATH=src python -m job_monitor.runner --bootstrap` once; then run the DST-aware Europe/Berlin scheduler as a persistent service with `PYTHONPATH=src python -m job_monitor.runner --serve`. A normal manual collection uses `PYTHONPATH=src python -m job_monitor.runner`.
+The monitor adds independent Adzuna, Arbeitnow, Jobicy and Jooble connectors, a source-neutral SQLite ledger, append-only raw JSON snapshots, explainable cross-source matching, an SMTP notification outbox, and a dashboard data export. Jooble needs country-specific API keys for DE, AT and CH; set them as `JOOBLE_API_KEY_DE`, `JOOBLE_API_KEY_AT` and `JOOBLE_API_KEY_CH`. For a quiet initial baseline, run `PYTHONPATH=src python -m job_monitor.runner --bootstrap` once; then run the DST-aware Europe/Berlin scheduler as a persistent service with `PYTHONPATH=src python -m job_monitor.runner --serve`. A normal manual collection uses `PYTHONPATH=src python -m job_monitor.runner`.
 
 See [docs/architecture.md](docs/architecture.md) for the audit, data flow, supported API access, scheduling, deployment and troubleshooting. Copy [.env.example](.env.example) to `.env` and fill in credentials locally. No credentials belong in Git. A new [monitoring dashboard section](https://Chrisinho8.github.io/DACH-data-job-market/) reads `docs/data/monitoring.json`; publishing that file remains separate from collection.
 

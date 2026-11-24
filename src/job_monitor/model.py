@@ -170,7 +170,7 @@ def normalize(raw, source, collected_at=None):
     city = clean_text(raw.get("city") or raw.get("location_city")) or None
     if not city and location:
         city = clean_text(str(location).split(",")[0]) or None
-        if city and norm(city) in {"remote", "europe", "worldwide", "hybrid"}:
+        if city and norm(city) in {"remote", "europe", "worldwide", "hybrid", "germany", "deutschland", "austria", "osterreich", "switzerland", "schweiz", "de", "at", "ch"}:
             city = None
     tags = raw.get("tags") or raw.get("categories") or []
     workplace = norm(f"{location} {raw.get('remote_type') or ''} {raw.get('workplace_type') or ''} {raw.get('workplace') or ''}")

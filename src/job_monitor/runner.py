@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from .connectors import AdzunaConnector, ArbeitnowConnector, JobicyConnector
+from .connectors import AdzunaConnector, ArbeitnowConnector, JobicyConnector, JoobleConnector
 from .config import load_env
 from .model import normalize
 from .notifications import send_email
@@ -31,7 +31,7 @@ def collect(db_path="data/monitor.sqlite", bronze_path="data/bronze", gold_path=
         store.start_run(run_id, started)
         stats, errors, all_records = {}, [], []
         now = datetime.now(timezone.utc)
-        for connector in connectors or [AdzunaConnector(), ArbeitnowConnector(), JobicyConnector()]:
+        for connector in connectors or [AdzunaConnector(), ArbeitnowConnector(), JobicyConnector(), JoobleConnector()]:
             source = connector.source
             try:
                 result = connector.collect()
@@ -42,9 +42,11 @@ def collect(db_path="data/monitor.sqlite", bronze_path="data/bronze", gold_path=
                     raw_file.write_text(json.dumps({"source": source, "collected_at": started,
                                                     "run_id": run_id, "page": raw}, ensure_ascii=False), encoding="utf-8")
                 all_records.extend(result.jobs)
-                stats[source] = {"status": "success", "requests": getattr(connector, "request_count", result.requests),
+                source_status = "partial_failure" if result.errors else "success"
+                stats[source] = {"status": source_status, "requests": getattr(connector, "request_count", result.requests),
                                  "raw_records": sum(1 for page in result.raw_pages for item in (page.get("payload", {}).get("results") or page.get("payload", {}).get("data") or page.get("payload", {}).get("jobs") or []) if isinstance(item, dict)),
                                  "normalized_records": len(result.jobs), "errors": result.errors}
+                errors.extend(f"{source}: {message}" for message in result.errors)
             except Exception as exc:
                 LOG.error("source failed: %s (%s)", source, type(exc).__name__)
                 message = f"{source}: {type(exc).__name__}"
@@ -80,13 +82,14 @@ def collect(db_path="data/monitor.sqlite", bronze_path="data/bronze", gold_path=
                     notification_status = "failed"
                     errors.append(f"email: {safe_error}")
             finished = datetime.now(timezone.utc).isoformat(timespec="seconds")
-            status = "success" if not errors else ("partial_failure" if len(stats) > len(errors) - (1 if notification_status == "failed" else 0) else "failed")
+            successful_sources = sum(1 for item in stats.values() if item["status"] in {"success", "partial_failure"})
+            status = "success" if not errors else ("partial_failure" if successful_sources else "failed")
             store.finish_run(run_id, started, finished, status, stats, len(new_jobs), duplicates, notification_status, errors)
             write_gold(store, gold_path)
             LOG.info(json.dumps({"run_id": run_id, "status": status, "source_stats": stats,
                                  "new_jobs": len(new_jobs), "duplicates": duplicates,
                                  "notification_status": notification_status, "errors": errors}))
-            return 0 if any(s["status"] == "success" for s in stats.values()) else 1
+            return 0 if successful_sources else 1
         except Exception as exc:
             safe_error = type(exc).__name__
             errors.append(f"pipeline: {safe_error}")

@@ -8,7 +8,7 @@ import pytest
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "src"))
 
-from job_monitor.connectors import AdzunaConnector, ArbeitnowConnector, JobicyConnector, SourceError
+from job_monitor.connectors import AdzunaConnector, ArbeitnowConnector, JobicyConnector, JoobleConnector, SourceError
 from job_monitor.model import canonical_url, classify, clean_text, country_code, normalize, parse_date
 from job_monitor.runner import collect, is_scheduled_slot, reprocess_bronze
 from job_monitor.store import RunLock, Store
@@ -98,6 +98,13 @@ class FakeSession:
             raise item
         return item
 
+    def post(self, url, **kwargs):
+        self.calls.append((url, kwargs))
+        item = self.responses.pop(0)
+        if isinstance(item, Exception):
+            raise item
+        return item
+
 
 def no_sleep(_):
     pass
@@ -137,6 +144,55 @@ def test_jobicy_cursor_pagination_and_dach_filter():
     assert len(result.jobs) == 1
     assert result.jobs[0]["country"] == "AT"
     assert result.jobs[0]["application_url"] == "https://jobicy.com/jobs/1"
+
+
+def test_jooble_country_keys_pagination_and_token_redaction():
+    first_page = [{"id": i, "title": "Data Engineer", "company": "Example GmbH",
+                   "location": "Berlin", "snippet": "Build data platforms",
+                   "link": f"https://de.jooble.org/jdp/{i}"} for i in range(50)]
+    session = FakeSession([
+        FakeResponse({"totalCount": 51, "jobs": first_page}),
+        FakeResponse({"totalCount": 51, "jobs": [{"id": 51, "title": "Data Analyst", "link": "https://de.jooble.org/jdp/51"}]}),
+        FakeResponse({"totalCount": 0, "jobs": []}),
+        FakeResponse({"totalCount": 1, "jobs": [{"id": "ch-1", "title": "Data Scientist", "location": "Zürich", "link": "https://ch.jooble.org/jdp/ch-1"}]}),
+    ])
+    c = JoobleConnector(session=session, api_keys={"DE":"secret-de", "AT":"secret-at", "CH":"secret-ch"},
+                        roles=["data engineer", "data analyst"], max_pages=3, sleep=no_sleep)
+    result = c.collect()
+    assert result.requests == 4
+    assert len(result.jobs) == 52
+    assert result.jobs[0]["country"] == "DE"
+    assert result.jobs[0]["company"] == "Example GmbH"
+    assert result.jobs[0]["source_url"] == "https://de.jooble.org/jdp/0"
+    assert result.jobs[0]["application_url"] is None
+    assert all(key not in json.dumps(page) for key in ("secret-de", "secret-at", "secret-ch") for page in result.raw_pages)
+    assert session.calls[0][0] == "https://de.jooble.org/api/secret-de"
+    assert session.calls[0][1]["json"]["keywords"] == "data engineer, data analyst"
+
+
+def test_jooble_region_failure_does_not_stop_other_countries():
+    session = FakeSession([FakeResponse({}, 403), FakeResponse({"totalCount": 1, "jobs":[
+        {"id":"at-1", "title":"Data Engineer", "location":"Wien", "link":"https://at.jooble.org/jdp/at-1"}
+    ]})])
+    c = JoobleConnector(session=session, api_keys={"DE":"bad", "AT":"good", "CH":None},
+                        retries=1, sleep=no_sleep)
+    result = c.collect()
+    assert len(result.jobs) == 1
+    assert result.jobs[0]["country"] == "AT"
+    assert any(message.startswith("DE:") for message in result.errors)
+    assert any(message.startswith("CH:") for message in result.errors)
+
+
+def test_jooble_retries_rate_limit():
+    session = FakeSession([FakeResponse({}, 429, {"Retry-After":"2"}),
+                           FakeResponse({"totalCount":0, "jobs":[]})])
+    waits = []
+    c = JoobleConnector(session=session, api_keys={"DE":"key"}, retries=2,
+                        sleep=waits.append)
+    result = c.collect()
+    assert result.requests == 1
+    assert c.request_count == 2
+    assert 2 in waits
 
 
 def test_retry_after_rate_limit():
