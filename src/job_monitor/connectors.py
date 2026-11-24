@@ -296,11 +296,11 @@ class JobicyConnector(Connector):
 
 
 class BundesagenturConnector(Connector):
-    """Reserved interface; not enabled pending authoritative API terms and SLA verification."""
+    """Reserved interface; BA's internal Jobsuche app endpoint is not enabled for polling."""
     source = "bundesagentur"
 
     def collect(self):
-        raise SourceError("bundesagentur: connector disabled pending verified official access terms and API support")
+        raise SourceError("bundesagentur: disabled; obtain BA written permission and supported read-API access before automated collection")
 
 
 def enabled_connectors():
