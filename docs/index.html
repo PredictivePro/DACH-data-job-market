@@ -564,6 +564,7 @@
     <div class="navlinks">
       <a href="#geo">Map</a>
       <a href="#postings-section">Postings</a>
+      <a href="#new-jobs-section">New jobs</a>
       <a href="#vocab-section">Skills</a>
       <a href="#role-profile">Role profiles</a>
       <a href="#runs-section">Runs</a>
@@ -582,9 +583,9 @@
           AI/data job market in the DACH region?</h1>
     </div>
     <p class="sub">
-      Every day at 08:00 UTC+2, data from job-postings across all three DACH
-      countries gets pulled from an API (Adzuna), loaded into a Delta Lake
-      pipeline in Databricks, and aggregated for various insights.
+      The historical market charts use daily Adzuna snapshots processed in
+      Databricks. The multi-source monitor below shows separately collected
+      opportunities from Adzuna, Arbeitnow and Jobicy when published.
     </p>
     <p class="byline">
       Built by <a href="https://www.linkedin.com/in/cruckensteiner112"
@@ -622,6 +623,28 @@
 
 <main class="wrap">
 
+<section class="monitor-section" id="new-jobs-section" aria-labelledby="monitor-title">
+  <div class="monitor-head">
+    <div><p class="monitor-kicker">Multi-source monitor</p><h2 id="monitor-title">New Data &amp; AI opportunities</h2>
+      <p id="monitor-freshness">New collector data will appear here after it is configured.</p></div>
+    <div class="monitor-kpis"><b id="monitor-24h">—</b><span>discovered in 24 hours</span><b id="monitor-7d">—</b><span>discovered in 7 days</span></div>
+  </div>
+  <div class="monitor-filters" aria-label="Filter monitored jobs">
+    <input id="monitor-title-search" type="search" placeholder="Job title" aria-label="Job title">
+    <input id="monitor-company-search" type="search" placeholder="Company" aria-label="Company">
+    <select id="monitor-country" aria-label="Country"><option value="">All countries</option><option>DE</option><option>AT</option><option>CH</option></select>
+    <select id="monitor-source" aria-label="Source"><option value="">All sources</option></select>
+    <select id="monitor-category" aria-label="Role category"><option value="">All role categories</option></select>
+    <select id="monitor-remote" aria-label="Workplace"><option value="">All workplace types</option><option value="remote">Remote</option><option value="hybrid">Hybrid</option><option value="on-site">On-site</option></select>
+    <select id="monitor-employment" aria-label="Employment type"><option value="">All employment types</option></select>
+    <label>First seen after <input id="monitor-first-date" type="date"></label>
+    <label>Published after <input id="monitor-pub-date" type="date"></label>
+  </div>
+  <div class="monitor-source-stats" id="monitor-source-stats" aria-live="polite"></div>
+  <div class="monitor-jobs" id="monitor-jobs" aria-live="polite"></div>
+  <p class="monitor-attribution">Job listings supplied by <a href="https://developer.adzuna.com/" target="_blank" rel="noopener">Adzuna</a>, <a href="https://www.arbeitnow.com/" target="_blank" rel="noopener">Arbeitnow</a> and <a href="https://jobicy.com/jobs-rss-feed" target="_blank" rel="noopener">Jobicy</a>.</p>
+</section>
+
 <section class="kpiblock" id="overview">
     <div class="ovw">
       <div class="ovw-lead">
@@ -640,7 +663,7 @@
             Last updated
           </span>
           <b id="kpi-when">-</b>
-          <span class="sub2">refreshed every day at 08:00 UTC+2</span>
+          <span class="sub2">historical Adzuna dashboard refresh</span>
         </div>
       </div>
       <div id="kpi" class="ovw-row"></div>
@@ -1155,6 +1178,7 @@
 <div id="maptip" role="tooltip"></div>
 
 <script src="app.js?v=31"></script>
+<script src="monitoring.js?v=1"></script>
 
 
 

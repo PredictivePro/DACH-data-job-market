@@ -9,7 +9,17 @@
 
 </div>
 
-A daily snapshot of the DACH AI/data-job market: **3,000+ live postings from 1,200+ employers** across Germany, Austria and Switzerland. Every day at 08:00 UTC+2 a Databricks pipeline queries the Adzuna API for 18 AI/data related job titles in all three countries, deduplicates and classifies the results through a bronze/silver/gold Delta Lake. It then gets scanned against a curated 71-term skills dictionary and published to a static GitHub Page.
+> **Automated monitoring on GitHub:** the Actions collector runs at the configured Europe/Berlin times, sends email alerts, keeps its history in a separate private repository, and refreshes the dashboard JSON. See [GitHub Actions setup](docs/architecture.md#github-actions-setup).
+
+The existing market dashboard contains historical Adzuna snapshots: **3,000+ postings from 1,200+ employers** across Germany, Austria and Switzerland. Its Databricks pipeline preserves Bronze history, builds Silver/Gold Delta tables, and publishes static dashboard datasets. The new multi-source monitor is an additive collector for early DACH Data & AI job alerts. It keeps the existing dashboard history and analytics intact.
+
+## Multi-source collection and instant alerts
+
+The monitor adds independent Adzuna, Arbeitnow and Jobicy connectors, a source-neutral SQLite ledger, append-only raw JSON snapshots, explainable cross-source matching, an SMTP notification outbox, and a dashboard data export. For a quiet initial baseline, run `PYTHONPATH=src python -m job_monitor.runner --bootstrap` once; then run the DST-aware Europe/Berlin scheduler as a persistent service with `PYTHONPATH=src python -m job_monitor.runner --serve`. A normal manual collection uses `PYTHONPATH=src python -m job_monitor.runner`.
+
+See [docs/architecture.md](docs/architecture.md) for the audit, data flow, supported API access, scheduling, deployment and troubleshooting. Copy [.env.example](.env.example) to `.env` and fill in credentials locally. No credentials belong in Git. A new [monitoring dashboard section](https://Chrisinho8.github.io/DACH-data-job-market/) reads `docs/data/monitoring.json`; publishing that file remains separate from collection.
+
+The legacy Adzuna notebook pipeline and existing `docs/data/*.json` history remain in place. Current dashboard aggregates still describe the existing Adzuna snapshots; multi-source rows are shown separately and are never presented as closed solely because a source stops returning them.
 
 ## How the tracker might help you
 

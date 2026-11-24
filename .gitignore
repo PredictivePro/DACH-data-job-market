@@ -8,11 +8,17 @@ adzuna.json
 __pycache__/
 *.pyc
 .pytest_cache/
+.pytest-tmp/
 .ipynb_checkpoints/
 
 
 raw/
 data/raw/
+data/bronze/
+data/monitor.sqlite
+data/monitor.sqlite-*
+data/monitor.lock
+.job-monitor-state/
 *.parquet
 
 # os
