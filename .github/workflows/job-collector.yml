@@ -54,7 +54,13 @@ jobs:
           JOB_MONITOR_DB: .job-monitor-state/monitor.sqlite
           JOB_MONITOR_BRONZE: .job-monitor-state/bronze
           JOB_MONITOR_GOLD: docs/data/monitoring.json
-        run: python -m job_monitor.runner
+        run: |
+          if [ -s "$JOB_MONITOR_DB" ]; then
+            python -m job_monitor.runner
+          else
+            echo "No saved history yet; creating a quiet initial baseline."
+            python -m job_monitor.runner --bootstrap
+          fi
 
       - name: Save durable state
         env:
